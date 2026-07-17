@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profile · CineMatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+
+    <section class="dash-hero container">
+      <h1 id="uname"></h1>
+      <p id="uemail" style="color:var(--text-muted)"></p>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><div><h2>Favorite genres</h2><p>Tap to toggle — feeds your recommendations.</p></div></div>
+      <div class="genres" id="favs"></div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><h2>Your rated movies</h2></div>
+      <div id="rated"></div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><h2>Your watchlist</h2></div>
+      <div id="watch"></div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="/app/js/mock-data.js"></script>
+    <script src="/app/js/api.js"></script>
+    <script src="/app/js/ui.js"></script>
+    <script>
+      if (!requireAuth()) throw new Error();
+      let user = API.currentUser();
+      document.getElementById("nav").innerHTML = renderNav("profile");
+      document.getElementById("footer").innerHTML = renderFooter();
+      document.getElementById("uname").textContent = user.name;
+      document.getElementById("uemail").textContent = user.email;
+
+      async function load() {
+        const genres = await API.getGenres();
+        const fav = user.favorite_genres || [];
+        document.getElementById("favs").innerHTML = genres
+          .map((g) => `<button class="chip ${fav.includes(g) ? "active" : ""}" data-g="${g}">${g}</button>`)
+          .join("");
+        document.querySelectorAll("#favs .chip").forEach((c) =>
+          c.addEventListener("click", async () => {
+            const g = c.dataset.g;
+            const next = fav.includes(g) ? fav.filter((x) => x !== g) : [...fav, g];
+            user = await API.updateProfile({ favorite_genres: next });
+            user = API.currentUser();
+            load();
+            toast("Preferences updated", "success");
+          })
+        );
+
+        const ratings = await API.getMyRatings();
+        if (ratings.length) {
+          const movies = await Promise.all(ratings.map((r) => API.getMovie(r.movie_id)));
+          document.getElementById("rated").innerHTML = movieGrid(movies.filter(Boolean));
+        } else {
+          document.getElementById("rated").innerHTML = `<div class="empty"><h3>You haven't rated anything yet</h3><p>Rate movies to train your recommendation model.</p></div>`;
+        }
+
+        const wl = await API.getWatchlist();
+        document.getElementById("watch").innerHTML = wl.length
+          ? movieGrid(wl)
+          : `<div class="empty"><h3>Watchlist empty</h3></div>`;
+      }
+      load();
+    </script>
+  </body>
+</html>
