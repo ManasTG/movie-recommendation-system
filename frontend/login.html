@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in · CineMatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <aside class="auth-side">
+        <a href="/app/index.html" class="brand"><div class="brand-logo">C</div>CineMatch</a>
+        <div class="auth-quote">
+          <h2>Movies that match you — not the algorithm's mood.</h2>
+          <p>Sign in to get personalised recommendations tuned by TF-IDF content matching and collaborative KNN.</p>
+        </div>
+        <div style="color:var(--text-dim);font-size:12px">© CineMatch</div>
+      </aside>
+      <section class="auth-form-wrap">
+        <form class="auth-form" id="form" novalidate>
+          <h1>Welcome back</h1>
+          <p>Sign in to continue where you left off.</p>
+          <div class="field" data-name="email">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="you@example.com" required />
+            <div class="err">Please enter a valid email.</div>
+          </div>
+          <div class="field" data-name="password">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="••••••••" required minlength="6" />
+            <div class="err">Password must be at least 6 characters.</div>
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Sign in</button>
+          <p class="auth-alt">No account? <a href="/app/register.html">Create one</a></p>
+        </form>
+      </section>
+    </main>
+    <script src="/app/js/mock-data.js"></script>
+    <script src="/app/js/api.js"></script>
+    <script src="/app/js/ui.js"></script>
+    <script>
+      const form = document.getElementById("form");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form));
+        let ok = true;
+        form.querySelectorAll(".field").forEach((f) => {
+          const input = f.querySelector("input");
+          const invalid = !input.checkValidity();
+          f.classList.toggle("invalid", invalid);
+          if (invalid) ok = false;
+        });
+        if (!ok) return;
+        try {
+          await API.login(data);
+          toast("Signed in successfully", "success");
+          const next = qs("next") || "/app/dashboard.html";
+          setTimeout(() => (location.href = next), 400);
+        } catch (err) {
+          toast(err.message, "error");
+        }
+      });
+    </script>
+  </body>
+</html>
