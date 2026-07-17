@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CineMatch — AI Movie Recommendations</title>
+    <meta name="description" content="Discover your next favorite film with AI-powered movie recommendations tailored to your taste." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+
+    <header class="hero">
+      <div class="container hero-grid">
+        <div>
+          <h1>Find your next <span class="accent">obsession</span>, powered by AI.</h1>
+          <p>CineMatch blends content-based filtering, collaborative KNN, and a hybrid engine to recommend films that actually match your taste — not what everyone else is watching.</p>
+          <div class="hero-cta">
+            <a href="/app/register.html" class="btn btn-primary btn-lg">Start recommending</a>
+            <a href="#trending" class="btn btn-ghost btn-lg">Browse movies</a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat"><div class="n" id="statMovies">—</div><div class="l">Movies</div></div>
+            <div class="hero-stat"><div class="n">16</div><div class="l">Genres</div></div>
+            <div class="hero-stat"><div class="n">TF-IDF</div><div class="l">+ KNN</div></div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-poster" style="background-image:url('https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg')"></div>
+          <div class="hero-poster" style="background-image:url('https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg')"></div>
+          <div class="hero-poster" style="background-image:url('https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg')"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="section container">
+      <div class="section-head">
+        <div>
+          <h2>Search the library</h2>
+          <p>Search by title, genre or year — updates as you type.</p>
+        </div>
+      </div>
+      <form class="searchbar" onsubmit="event.preventDefault();doSearch()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="q" placeholder="Try 'Inception', 'Sci-Fi' or '2019'" autocomplete="off" />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+    </section>
+
+    <section class="section container">
+      <div class="section-head">
+        <div><h2>Popular genres</h2><p>Pick a mood — we'll surface matching titles.</p></div>
+      </div>
+      <div class="genres" id="genres"></div>
+    </section>
+
+    <section id="trending" class="section container">
+      <div class="section-head"><div><h2>Trending now</h2><p>Handpicked by the community.</p></div></div>
+      <div id="trendingGrid">${''}</div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><div><h2>Top rated</h2><p>All-time highest scoring films.</p></div></div>
+      <div id="topGrid"></div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="/app/js/mock-data.js"></script>
+    <script src="/app/js/api.js"></script>
+    <script src="/app/js/ui.js"></script>
+    <script>
+      document.getElementById("nav").innerHTML = renderNav("home");
+      document.getElementById("footer").innerHTML = renderFooter();
+
+      async function load() {
+        document.getElementById("trendingGrid").innerHTML = spinner();
+        document.getElementById("topGrid").innerHTML = spinner();
+        const genres = await API.getGenres();
+        document.getElementById("genres").innerHTML = genres
+          .map((g) => `<a class="chip" href="/app/dashboard.html?genre=${encodeURIComponent(g)}">${g}</a>`)
+          .join("");
+        const { items, total } = await API.getMovies({ limit: 12 });
+        document.getElementById("statMovies").textContent = total.toLocaleString();
+        document.getElementById("trendingGrid").innerHTML = movieGrid(items);
+        const all = (await API.getMovies({ limit: 100 })).items;
+        const top = [...all].sort((a, b) => b.avg_rating - a.avg_rating).slice(0, 12);
+        document.getElementById("topGrid").innerHTML = movieGrid(top);
+      }
+
+      function doSearch() {
+        const q = document.getElementById("q").value.trim();
+        if (q) location.href = "/app/dashboard.html?q=" + encodeURIComponent(q);
+      }
+      const debSearch = debounce(async () => {
+        const q = document.getElementById("q").value.trim();
+        if (q.length >= 2) {
+          const items = await API.search(q);
+          document.getElementById("trendingGrid").innerHTML = movieGrid(items.slice(0, 12));
+        }
+      }, 350);
+      document.getElementById("q").addEventListener("input", debSearch);
+
+      load();
+    </script>
+  </body>
+</html>
