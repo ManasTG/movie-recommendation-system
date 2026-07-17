@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>For You · CineMatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+
+    <section class="dash-hero container">
+      <h1>Recommended for you</h1>
+      <p>Hybrid recommendations blending TF-IDF content matching with collaborative KNN.</p>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><h2>Recommended for you</h2></div>
+      <div id="rec"></div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><h2 id="likedTitle">Because you liked…</h2></div>
+      <div id="because"></div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><h2>Popular in your favorite genre</h2></div>
+      <div id="genrePop"></div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head"><h2>Highest rated of all time</h2></div>
+      <div id="top"></div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="/app/js/mock-data.js"></script>
+    <script src="/app/js/api.js"></script>
+    <script src="/app/js/ui.js"></script>
+    <script>
+      if (!requireAuth()) throw new Error();
+      const user = API.currentUser();
+      document.getElementById("nav").innerHTML = renderNav("rec");
+      document.getElementById("footer").innerHTML = renderFooter();
+
+      async function load() {
+        ["rec", "because", "genrePop", "top"].forEach((id) => (document.getElementById(id).innerHTML = spinner()));
+        const [recs, ratings, all] = await Promise.all([API.recommend(user.id), API.getMyRatings(), API.getMovies({ limit: 200 })]);
+        document.getElementById("rec").innerHTML = movieGrid(recs);
+
+        const liked = ratings.filter((r) => r.rating >= 4).sort((a, b) => b.at - a.at)[0];
+        if (liked) {
+          const base = await API.getMovie(liked.movie_id);
+          const sim = await API.similar(liked.movie_id);
+          document.getElementById("likedTitle").textContent = `Because you liked "${base.title}"`;
+          document.getElementById("because").innerHTML = movieGrid(sim);
+        } else {
+          document.getElementById("because").innerHTML = `<div class="empty"><h3>Rate a few movies</h3><p>Once you rate movies 4★+ we'll surface similar picks here.</p></div>`;
+        }
+
+        const favGenre = (user.favorite_genres && user.favorite_genres[0]) || (base => base && base.genre[0])(liked && (await API.getMovie(liked.movie_id))) || "Drama";
+        const g = (await API.getMovies({ genre: favGenre, limit: 12 })).items;
+        document.getElementById("genrePop").innerHTML = movieGrid(g);
+
+        document.getElementById("top").innerHTML = movieGrid(
+          [...all.items].sort((a, b) => b.avg_rating - a.avg_rating).slice(0, 12)
+        );
+      }
+      load();
+    </script>
+  </body>
+</html>

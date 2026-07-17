@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create account · CineMatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <aside class="auth-side">
+        <a href="/app/index.html" class="brand"><div class="brand-logo">C</div>CineMatch</a>
+        <div class="auth-quote">
+          <h2>Every rating trains your model.</h2>
+          <p>The first account you create automatically becomes the admin — perfect for demoing your ML pipeline.</p>
+        </div>
+        <div style="color:var(--text-dim);font-size:12px">© CineMatch</div>
+      </aside>
+      <section class="auth-form-wrap">
+        <form class="auth-form" id="form" novalidate>
+          <h1>Create your account</h1>
+          <p>Start building your movie taste profile.</p>
+          <div class="field" data-name="name">
+            <label>Full name</label>
+            <input name="name" required minlength="2" placeholder="Jane Doe" />
+            <div class="err">Please enter your name.</div>
+          </div>
+          <div class="field" data-name="email">
+            <label>Email</label>
+            <input type="email" name="email" required placeholder="you@example.com" />
+            <div class="err">Please enter a valid email.</div>
+          </div>
+          <div class="field" data-name="password">
+            <label>Password</label>
+            <input type="password" name="password" required minlength="6" placeholder="At least 6 characters" />
+            <div class="err">Password must be at least 6 characters.</div>
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Create account</button>
+          <p class="auth-alt">Already have one? <a href="/app/login.html">Sign in</a></p>
+        </form>
+      </section>
+    </main>
+    <script src="/app/js/mock-data.js"></script>
+    <script src="/app/js/api.js"></script>
+    <script src="/app/js/ui.js"></script>
+    <script>
+      const form = document.getElementById("form");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form));
+        let ok = true;
+        form.querySelectorAll(".field").forEach((f) => {
+          const input = f.querySelector("input");
+          const invalid = !input.checkValidity();
+          f.classList.toggle("invalid", invalid);
+          if (invalid) ok = false;
+        });
+        if (!ok) return;
+        try {
+          await API.signup(data);
+          toast("Welcome to CineMatch!", "success");
+          setTimeout(() => (location.href = "/app/dashboard.html"), 400);
+        } catch (err) {
+          toast(err.message, "error");
+        }
+      });
+    </script>
+  </body>
+</html>
