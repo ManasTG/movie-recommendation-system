@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Movie · CineMatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <div id="main"></div>
+    <div id="footer"></div>
+
+    <script src="/app/js/mock-data.js"></script>
+    <script src="/app/js/api.js"></script>
+    <script src="/app/js/ui.js"></script>
+    <script>
+      document.getElementById("nav").innerHTML = renderNav();
+      document.getElementById("footer").innerHTML = renderFooter();
+
+      async function load() {
+        const id = qs("id");
+        const main = document.getElementById("main");
+        main.innerHTML = spinner();
+        const m = await API.getMovie(id);
+        if (!m) return (main.innerHTML = `<div class="empty"><h3>Movie not found</h3></div>`);
+        const similar = await API.similar(id);
+        const myRatings = API.isAuthed() ? await API.getMyRatings() : [];
+        const mine = myRatings.find((r) => r.movie_id == m.movie_id);
+        const wl = API.isAuthed() ? await API.getWatchlist() : [];
+        const saved = wl.some((w) => w.movie_id == m.movie_id);
+
+        main.innerHTML = `
+          <section class="movie-hero">
+            <div class="movie-hero-bg" style="background-image:url('${m.poster_url}')"></div>
+            <div class="container movie-hero-inner">
+              <div class="movie-hero-poster" style="background-image:url('${m.poster_url}')"></div>
+              <div class="movie-info">
+                <h1>${escapeHtml(m.title)}</h1>
+                <div class="tags">${m.genre.map((g) => `<span class="tag">${g}</span>`).join("")}</div>
+                <p class="overview">${escapeHtml(m.overview)}</p>
+                <div class="movie-facts">
+                  <div class="fact"><div class="l">Rating</div><div class="v">★ ${Number(m.avg_rating).toFixed(1)}</div></div>
+                  <div class="fact"><div class="l">Year</div><div class="v">${m.release_year}</div></div>
+                  <div class="fact"><div class="l">Runtime</div><div class="v">${m.runtime}m</div></div>
+                  <div class="fact"><div class="l">Genres</div><div class="v" style="font-size:14px">${m.genre.length}</div></div>
+                </div>
+                <div style="margin:16px 0">
+                  <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">Your rating</div>
+                  <div class="stars" id="stars">
+                    ${[1, 2, 3, 4, 5].map((n) => `<span data-n="${n}" class="${mine && n <= mine.rating ? "filled" : ""}">★</span>`).join("")}
+                  </div>
+                </div>
+                <div class="movie-actions">
+                  <button class="btn btn-primary" onclick="toggleWatch(${m.movie_id}, ${saved})">
+                    ${saved ? "✓ In watchlist" : "+ Add to watchlist"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="section container">
+            <div class="section-head"><div><h2>Similar movies</h2><p>Same-genre matches ranked by cosine similarity.</p></div></div>
+            ${movieGrid(similar)}
+          </section>
+        `;
+
+        document.querySelectorAll("#stars span").forEach((s) => {
+          s.addEventListener("click", async () => {
+            if (!API.isAuthed()) {
+              toast("Please sign in to rate", "info");
+              return;
+            }
+            const n = Number(s.dataset.n);
+            await API.rate(m.movie_id, n);
+            document.querySelectorAll("#stars span").forEach((x, i) => x.classList.toggle("filled", i < n));
+            toast("Rating saved — recommendations updated", "success");
+          });
+        });
+      }
+
+      window.toggleWatch = async (id, saved) => {
+        if (!API.isAuthed()) return (location.href = "/app/login.html");
+        if (saved) {
+          await API.removeWatchlist(id);
+          toast("Removed from watchlist", "info");
+        } else {
+          await API.addWatchlist(id);
+          toast("Added to watchlist", "success");
+        }
+        load();
+      };
+
+      load();
+    </script>
+  </body>
+</html>
