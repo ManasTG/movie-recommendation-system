@@ -1,5 +1,25 @@
 # movie-recommendation-system
 
+# Movie Recommendation System
+
+A full-stack Movie Recommendation System that suggests movies based on user preferences and ratings. The project combines a modern web interface with a Python backend and a machine learning recommendation engine powered by the MovieLens dataset.
+
+## Features
+
+* Browse and discover movies
+* Personalized movie recommendations
+* Search for movies
+* Recommendation engine built with Machine Learning
+* Full-stack architecture (Node.js + Python)
+
+## Tech Stack
+
+* **Frontend:** Node.js, JavaScript
+* **Backend:** Python
+* **Machine Learning:** Python (scikit-learn/pandas, etc.)
+* **Dataset:** MovieLens
+
+
 ## requirements
 - Node.js
 - python
